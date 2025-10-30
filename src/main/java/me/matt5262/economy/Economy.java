@@ -32,26 +32,32 @@ public final class Economy extends JavaPlugin {
             // #missing
         }
         // registers PlaceholderAPI
+
         new BukkitRunnable() {
-        // #missing
+            // create a bukkitRunnable
             @Override
             public void run() {
                 saveBalances();
-                // #missing
                 getLogger().info("Auto-saved all player balances.");
             }
+
         }.runTaskTimer(this, 0, 15*60*20);
-        // #missing
+        // start a repeat timer task that runs every 15 minutes, 1 second is 20 ticks and it is written in ticks
         getLogger().info("SellSystem Enabled!");
         // let ppl know that the plugin is enabled.
     }
 
     @Override
     public void onDisable() {
-
-
-
+        saveBalances();
+        getLogger().info("Balances saved on disable.");
     }
+
+    public HashMap<UUID, Double> getBalances() {
+        return balances;
+    }
+    // it's a getter method
+    // you write HashMap<UUID, Double> because this method needs to know what type it returns
 
     public void loadBalances() {
         if (getConfig().isConfigurationSection("balances")) {
