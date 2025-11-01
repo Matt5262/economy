@@ -6,7 +6,7 @@
 
     <groupId>me.matt5262</groupId>
     <artifactId>economy</artifactId>
-    <version>1.0.o</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>economy</name>
