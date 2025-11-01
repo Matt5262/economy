@@ -1,5 +1,8 @@
 package me.matt5262.economy;
 
+import me.clip.placeholderapi.PlaceholderAPIPlugin;
+import me.clip.placeholderapi.expansion.manager.LocalExpansionManager;
+
 import me.matt5262.economy.commands.SellCommand;
 import me.matt5262.economy.expansions.SellPlaceholder;
 import me.matt5262.economy.listeners.SellMenuListener;
@@ -24,14 +27,18 @@ public final class Economy extends JavaPlugin {
         // does your config file not exist then take whatever you've made inside the config.yml and create the file. Does not overwrite if it exists.
         loadBalances();
         // checks if balances exist in
-        getCommand("sell").setExecutor(new SellCommand());
-        getServer().getPluginManager().registerEvents(new SellMenuListener(), this);
+        getCommand("sell").setExecutor(new SellCommand(this));
+        getServer().getPluginManager().registerEvents(new SellMenuListener(this), this);
         // registers the command and listener
+
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            new SellPlaceholder().regiser();
-            // #missing
+            PlaceholderAPIPlugin.getInstance()
+                    .getLocalExpansionManager()
+                    .register(new SellPlaceholder(this));
+            getLogger().info("Economy placeholders loaded!");
+        } else {
+            getLogger().warning("PlaceholderAPI not found: placeholders won't work.");
         }
-        // registers PlaceholderAPI
 
         new BukkitRunnable() {
             // create a bukkitRunnable
@@ -42,8 +49,8 @@ public final class Economy extends JavaPlugin {
             }
 
         }.runTaskTimer(this, 0, 15*60*20);
-        // start a repeat timer task that runs every 15 minutes, 1 second is 20 ticks and it is written in ticks
-        getLogger().info("SellSystem Enabled!");
+        // start a repeat timer task that runs every 15 minutes, 1 second is 20 ticks, and it is written in ticks
+        getLogger().info("Economy Enabled!");
         // let ppl know that the plugin is enabled.
     }
 
@@ -59,6 +66,20 @@ public final class Economy extends JavaPlugin {
     // it's a getter method
     // you write HashMap<UUID, Double> because this method needs to know what type it returns
 
+    public void addBalance(UUID uuid, double amount) {
+        balances.put(uuid, balances.getOrDefault(uuid, 0.0) + amount);
+    }
+
+    public void saveBalances() {
+        for (var entry : balances.entrySet()) {
+            // for each entry in balances,  do the following code. Before you do it, convert balances into an entry (a live collection for your hashmap that the loop can get/read)
+            getConfig().set("balances." + entry.getKey(), entry.getValue());
+            // the current entry we are dealing with: get the plugins' config, and set the entry's key under the balances category and write the value next to it
+        }
+        saveConfig();
+        // save changes to config, java method
+    }
+
     public void loadBalances() {
         if (getConfig().isConfigurationSection("balances")) {
             // get config and check if balances section exists
@@ -66,9 +87,9 @@ public final class Economy extends JavaPlugin {
                 // the key will be the current uuid it's going through. The (false) argument means it only gets direct keys, not nested ones.
                 // basically it takes the keys (uuids) that are under the section balances
                 UUID uuid = UUID.fromString(key);
-                // turns uuid into a UUID type from the key which is a string, the string is the actual UUID #missing
+                // turns the key string which is the UUID into an actual UUID type instead of string.
                 double value = getConfig().getDouble("balances." + key);
-                // sets value to the double (the balance) from the path fx: "balances.AUuidHere"
+                // sets value to the double (the balance) from the path fx: "balances.UUID: here is the value it'll get"
                 balances.put(uuid, value);
                 // now you put the uuid into the hashmap so we can use the data then next to it the value that you got from the balance config.
                 // remember, "how does it get my uuid if im not in the config?", it doesn't, it only loads those who exists.
@@ -77,80 +98,3 @@ public final class Economy extends JavaPlugin {
         }
     }
 }
-
-/*
-package me.yourname.sellsystem;
-
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-import java.util.HashMap;
-import java.util.UUID;
-
-public class SellSystem extends JavaPlugin {
-
-    private final HashMap<UUID, Double> balances = new HashMap<>();
-
-    @Override
-    public void onEnable() {
-        saveDefaultConfig();
-        loadBalances();
-
-        // Register command + listener
-        getCommand("sell").setExecutor(new SellCommand(this));
-        getServer().getPluginManager().registerEvents(new SellMenuListener(this), this);
-
-        // Register PlaceholderAPI (optional)
-        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            new SellPlaceholder(this).register();
-        }
-
-        // Auto-save every 15 minutes (15 * 60 * 20 ticks)
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                saveBalances();
-                getLogger().info("Auto-saved all player balances.");
-            }
-        }.runTaskTimer(this, 0, 15 * 60 * 20);
-
-        getLogger().info("SellSystem enabled!");
-    }
-
-                        // YOU REACHED HERE
-                        // https://chatgpt.com/g/g-p-68bc14d61a748191b931e544f6104865-coding-in-java-bukkit/c/69026eed-a724-832c-b32a-160ca7e2d911
-                        // https://chatgpt.com/g/g-p-68bc14d61a748191b931e544f6104865-coding-in-java-bukkit/c/69027560-5a68-8328-ac62-8902ace77c68
-
-    @Override
-    public void onDisable() {
-        saveBalances();
-        getLogger().info("Balances saved on disable.");
-    }
-
-    public HashMap<UUID, Double> getBalances() {
-        return balances;
-    }
-
-    public void addBalance(UUID uuid, double amount) {
-        balances.put(uuid, balances.getOrDefault(uuid, 0.0) + amount);
-    }
-
-    // ---------------- Saving and Loading ----------------
-    public void saveBalances() {
-        for (var entry : balances.entrySet()) {
-            getConfig().set("balances." + entry.getKey(), entry.getValue());
-        }
-        saveConfig();
-    }
-
-    public void loadBalances() {
-        if (getConfig().isConfigurationSection("balances")) {
-            for (String key : getConfig().getConfigurationSection("balances").getKeys(false)) {
-                UUID uuid = UUID.fromString(key);
-                double value = getConfig().getDouble("balances." + key);
-                balances.put(uuid, value);
-            }
-        }
-    }
-}
- */
